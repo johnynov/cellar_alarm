@@ -1,14 +1,14 @@
 /*
 Author - (c) Jan Wieczorek : 21/03/3019
-Subject - Cellar alarm
+Subject - Cellar alarm - transmitter
 Description - This is project for cellar alarm controlled by bluetooth.
     User can disarm
 */
 
 //include libraries
 #include <ESP8266WiFi.h>
-
-
+#include <RH_ASK.h> //433Mhz transmition module library
+#include <SPI.h> // neded to compile
 
 // Declare and define variables
 #define BUZZERPIN D1 // output buzzer pin
@@ -25,7 +25,7 @@ str state = LOW; //by default, no motion detected
 string alarm_armed = 0; //by default alarm not armed
 
 //Blynk credentials
-char auth[] = "e3d7d584f2c04bcaa5fbc7e92ada2f31";
+char auth[] = "";
 
 
 BLYNK_WRITE(V1)
@@ -42,9 +42,13 @@ void turn_alarm_sound(str input);
 void aim_alarm();
 void connector_control();
 
+RH_ASK driver;
+
 void setup() {
     Serial.begin(115200);
-    Serial.print("Sctipt initilization.");
+    Serial.println("Sctipt initilization.");
+    if (!driver.init())
+        Serial.println("RF Driver init failed");
     pinMode(BUZZERPIN, OUTPUT);
     pinMode(REED, INPUT);
     pinMode(REDLED, OUTPUT);
@@ -68,7 +72,10 @@ void detect_movement() {
             Serial.print("Motion detected")
             if (alarm_armed = 1;) {
                 alarm("ON");
-                Blynk.notify("Wykryto ruch w piwnicy przy włączonym alarmie");
+                const char *msg = "Wykryto ruch w piwnicy przy włączonym alarmie";
+                driver.send((uint8_t *)msg, strlen(msg));
+                driver.waitPacketSent();
+                Blynk.notify();
             }
             state = HIGH; //update alarm variable to high
         }
