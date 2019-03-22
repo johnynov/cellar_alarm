@@ -1,0 +1,2 @@
+[] dopisać void detect_voice() w transmitterze
+[]

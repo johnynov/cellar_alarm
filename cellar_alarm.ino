@@ -19,6 +19,7 @@ Description - This is project for cellar alarm controlled by bluetooth.
 #define SOUNDSENSOR D6 //input pin for sound sensor
 #define LIGHTSENSOR D7 //input pin for light sensor
 #define RELAY D8 //output for 230V realy
+#define 433TRANS D9 //output pin for 433Mhz transmitter
 #define A0
 
 int StatSwitch = 0;
@@ -37,7 +38,7 @@ BLYNK_WRITE(V1)
 }
 
 void detect_movement();
-void detect_voice();
+void detect_sound();
 void detect_light();
 void turn_alarm_sound(str input);
 void aim_alarm();
@@ -47,7 +48,7 @@ RH_ASK driver;
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Sctipt initilization.");
+    Serial.println("Sctipt initialization.");
     if (!driver.init())
         Serial.println("RF Driver init failed");
     pinMode(BUZZERPIN, OUTPUT);
@@ -63,7 +64,7 @@ void loop() {
       Blynk.run();
       detect_movement(); //This function wold run on CORE 1
       connector_control(); //this fuction would run on CORE 2
-      detect_voice(); //This function wold run on CORE 1
+      detect_sound(); //This function wold run on CORE 1
       detect_light(); //This function wold run on CORE 1
 
 }
@@ -72,8 +73,8 @@ void detect_movement() {
     str val = digitalRead(MOTIONSENSOR);
     if (val == HIGH) {
         delay(100);
-        if (state == LOW){
-            Serial.print("Motion detected")
+        if (state == LOW) {
+            Serial.print("Motion detected");
             if (alarm_armed = 1) {
                 alarm("ON");
                 const char *msg = "motion_detected";
@@ -85,28 +86,39 @@ void detect_movement() {
     }
     else {
         delay(200);
-        if (state == HIGH){
-            Serial.print("Motion stopped.")
+        if (state == HIGH) {
+            Serial.print("Motion stopped.");
             alarm("OFF");
             state = LOW; //update alarm variable to low
         }
     }
 }
 
-void detect_voice() {
-
+void detect_sound() {
+    int voice =  ;
+    if (voice > 300 && alarm_armed == 1) {
+        Serial.print("Sound detected")
+        const char *msg = "sound_detected";
+        driver.send((uint8_t *)msg, strlen(msg));
+        driver.waitPacketSent();
+        Serial.print("Sent \"sound_detected\" message to reciever.");
+    }
     return 1;
 }
 
 void detect_light() {
     int sensorValue = analogRead(LIGHTSENSOR);
-    if (alarm_armed){
+    if (alarm_armed == 1) {
           digitalWrite(RELAY, HIGH);
+          const char *msg = "light_detected";
+          driver.send((uint8_t *)msg, strlen(msg));
+          driver.waitPacketSent();
+          Serial.print("Sent \"light_detected\" message to reciever.");
     }
     return sensorValue;
 }
 
-void turn_alarm_sound(str input){
+void turn_alarm_sound(str input) {
     if (input == "ON") {
         digital.Write(BUZZERPIN, HIGH); //turn on sound alarm
         Serial.print("Turning on alarm");
@@ -118,14 +130,14 @@ void turn_alarm_sound(str input){
 }
 
 
-void aim_alarm(int time){
+void aim_alarm(int time) {
     Serial.print("Arming alarm in 15 seconds");
     digitalWrite(REDLED, HIGH);
     delay(time);
     alarm_armed = 1;
 }
 
-void connector_control(){
+void connector_control() {
     reed_state = digitalRead(REED);
     if (reed_state == HIGH) {
         aim_alarm(15000);
