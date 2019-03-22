@@ -18,6 +18,7 @@ Description - This is project for cellar alarm controlled by bluetooth.
 #define MOTIONSENSOR D5 // input pin for motion sensor
 #define SOUNDSENSOR D6 //input pin for sound sensor
 #define LIGHTSENSOR D7 //input pin for light sensor
+#define RELAY D8 //output for 230V realy
 #define A0
 
 int StatSwitch = 0;
@@ -60,8 +61,11 @@ void setup() {
 
 void loop() {
       Blynk.run();
-      detect_movement();
-      connector_control();
+      detect_movement(); //This function wold run on CORE 1
+      connector_control(); //this fuction would run on CORE 2
+      detect_voice(); //This function wold run on CORE 1
+      detect_light(); //This function wold run on CORE 1
+
 }
 
 void detect_movement() {
@@ -70,12 +74,11 @@ void detect_movement() {
         delay(100);
         if (state == LOW){
             Serial.print("Motion detected")
-            if (alarm_armed = 1;) {
+            if (alarm_armed = 1) {
                 alarm("ON");
-                const char *msg = "Wykryto ruch w piwnicy przy włączonym alarmie";
+                const char *msg = "motion_detected";
                 driver.send((uint8_t *)msg, strlen(msg));
                 driver.waitPacketSent();
-                Blynk.notify();
             }
             state = HIGH; //update alarm variable to high
         }
@@ -92,10 +95,15 @@ void detect_movement() {
 
 void detect_voice() {
 
+    return 1;
 }
 
 void detect_light() {
-
+    int sensorValue = analogRead(LIGHTSENSOR);
+    if (alarm_armed){
+          digitalWrite(RELAY, HIGH);
+    }
+    return sensorValue;
 }
 
 void turn_alarm_sound(str input){
