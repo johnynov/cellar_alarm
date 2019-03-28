@@ -22,9 +22,30 @@ Description - This is project for cellar alarm controlled by bluetooth.
 #define 433TRANS D9 //output pin for 433Mhz transmitter
 #define A0
 
+
+/*
+// SPI flash integrated
+GPIO 6 (SCK/CLK)
+GPIO 7 (SDO/SD0)
+GPIO 8 (SDI/SD1)
+GPIO 9 (SHD/SD2)
+GPIO 10 (SWP/SD3)
+GPIO 11 (CSC/CMD)
+
+// Input only pins
+#define 34
+#define 35
+#define 36
+#define 37
+#define 38
+#define 39
+// Capative touch pins
+
+*/
+
 int StatSwitch = 0;
-str state = LOW; //by default, no motion detected
-string alarm_armed = 0; //by default alarm not armed
+int motion_detected = 0; //by default, no motion detected
+int alarm_armed = 0; //by default alarm not armed
 
 //Blynk credentials
 char auth[] = "";
@@ -34,13 +55,13 @@ BLYNK_WRITE(V1)
 {
   alarm_armed = param.asInt();
   Serial.print("Alarm armed code is: ");
-  Serial.println(alarm_armed);
+  Serial.print(alarm_armed);
 }
 
 void detect_movement();
 void detect_sound();
 void detect_light();
-void turn_alarm_sound(str input);
+void turn_alarm_sound(String input);
 void aim_alarm();
 void connector_control();
 
@@ -70,32 +91,32 @@ void loop() {
 }
 
 void detect_movement() {
-    str val = digitalRead(MOTIONSENSOR);
+    String val = digitalRead(MOTIONSENSOR);
     if (val == HIGH) {
         delay(100);
-        if (state == LOW) {
+        if (motion_detected == LOW) {
             Serial.print("Motion detected");
             if (alarm_armed = 1) {
-                alarm("ON");
+                aim_alarm("ON");
                 const char *msg = "motion_detected";
                 driver.send((uint8_t *)msg, strlen(msg));
                 driver.waitPacketSent();
             }
-            state = HIGH; //update alarm variable to high
+            motion_detected = 1; //update alarm state to ON - 1
         }
     }
     else {
         delay(200);
-        if (state == HIGH) {
+        if (motion_detected == 1) {
             Serial.print("Motion stopped.");
-            alarm("OFF");
-            state = LOW; //update alarm variable to low
+            aim_alarm("OFF");
+            motion_detected = 0; //update motion detected to OFF - 0;
         }
     }
 }
 
 void detect_sound() {
-    int voice =  ;
+    int voice =  ; //read voice level from Sound Sensor
     if (voice > 300 && alarm_armed == 1) {
         Serial.print("Sound detected")
         const char *msg = "sound_detected";
@@ -118,7 +139,7 @@ void detect_light() {
     return sensorValue;
 }
 
-void turn_alarm_sound(str input) {
+void turn_alarm_sound(String input) {
     if (input == "ON") {
         digital.Write(BUZZERPIN, HIGH); //turn on sound alarm
         Serial.print("Turning on alarm");
@@ -131,9 +152,14 @@ void turn_alarm_sound(str input) {
 
 
 void aim_alarm(int time) {
-    Serial.print("Arming alarm in 15 seconds");
+    Serial.print("Arming alarm in" + String(time) + "seconds");
+    for (i=1, i++, i=time) {
+        digitalWrite(REDLED, HIGH);
+        delay(495);
+        digitalWrite(REDLED, LOW);
+        delay(495);
+    }
     digitalWrite(REDLED, HIGH);
-    delay(time);
     alarm_armed = 1;
 }
 
